@@ -1,0 +1,196 @@
+from tkinter import *
+from tkinter import messagebox
+from PIL import ImageTk, Image
+import random
+#importing necessary modules
+
+#this creates the non-resizable window, with the title
+root = Tk()
+root.title('Hangman')
+root.resizable(False, False)
+
+
+# images for hangman, starting with blank image and ending with fully drawn hangman
+# these images were all drawn with the same size so they don't differ when displayed
+hangman_img0 = ImageTk.PhotoImage(Image.open("hang0.png"))
+hangman_img1 = ImageTk.PhotoImage(Image.open("hang1.png"))
+hangman_img2 = ImageTk.PhotoImage(Image.open("hang2.png"))
+hangman_img3 = ImageTk.PhotoImage(Image.open("hang3.png"))
+hangman_img4 = ImageTk.PhotoImage(Image.open("hang4.png"))
+hangman_img5 = ImageTk.PhotoImage(Image.open("hang5.png"))
+hangman_img6 = ImageTk.PhotoImage(Image.open("hang6.png"))
+hangman_img7 = ImageTk.PhotoImage(Image.open("hang7.png"))
+hangman_img8 = ImageTk.PhotoImage(Image.open("hang8.png"))
+hangman_img9 = ImageTk.PhotoImage(Image.open("hang9.png"))
+
+
+# creating a list with images so it can be easily referenced later on with an integer
+image_list = [hangman_img0, hangman_img1, hangman_img2, hangman_img3, hangman_img4, hangman_img5,
+              hangman_img6, hangman_img7, hangman_img8, hangman_img9]
+
+# this chooses the secret word out of the txt file
+secret_word = (open("secret_word.txt").read().split())
+
+picture = 0
+
+# this is important because it creates the variable for the word that will be replaced by underscores and then letters
+# the label creates the space for the frameWord to be in, spanning across the keyboard with Times New Roman in size 50
+frameWord = StringVar()
+Label(root, textvariable=frameWord, padx=50, pady=50, font=("Times", 50)).grid(row=1, column=3, columnspan=10)
+
+# this is the starting function, it assigns the randomly chosen word to the varialbe 'word' and joins it with spaces
+# after that, the word that is displayed is joined by spaces and the letters are replaced by underscores in the
+# length of the word
+def start_game():
+    global word_with_spaces
+    global word
+    word = random.choice(secret_word)
+    word_with_spaces = " ".join(word)
+    frameWord.set(" ".join("_" * len(word)))
+
+# this function is only for the end game, where it resets the hangman picture to the first blank picture
+# the function is referenced in the 'restart' scenario later on where the my_label (which is the label showing
+# the hangman) is forgotten and then replaced by hangman_img0
+def pic_reset():
+    global my_label
+    my_label.grid_forget()
+    my_label = Label(image=hangman_img0)
+    my_label.grid(row=0, column=1, rowspan=2, columnspan=3)
+
+# this function defines the rules of the game
+def user_guess(letter_guessed):
+    global word
+    global word_with_spaces
+    global my_label
+    global picture
+
+    # two lists are created, one containing the actual word with spaces and the other one containing the
+    # displayed frameWord (which starts off being just underscores and spaces)
+    letter_list = list(word_with_spaces)
+    secret_letter_list = list(frameWord.get())
+
+    # this counts the word_with_spaces
+    if word_with_spaces.count(letter_guessed) > 0:
+
+        # for every element that is in the range of the length of the letter_list,
+        # it checks if the guessed letter input (via digital keyboard) is an element of the letter_list
+        for i in range(len(letter_list)):
+            if letter_list[i] == letter_guessed:
+
+                # this adds the added letter to the letter_guessed list
+                secret_letter_list[i] = letter_guessed
+
+            # this replaces the letter by the guessed letter
+            frameWord.set("".join(secret_letter_list))
+
+    # if the letter guessed is not apart of word_with_spaces, it initiates this else function,
+    # which increases the picture number and changes the picture to the next item in the list that
+    # was created earlier
+    else:
+        picture += 1
+        print("The Picture number is %d" % picture)
+        my_label.grid_forget()
+        my_label = Label(image=image_list[picture])
+        my_label.grid(row=0, column=1, rowspan=2, columnspan=3)
+
+        # if the last picture 9 is reached, without the letters being guessed,
+        # it shows the messagebox that reveals the word and asks for a restart
+        if picture == 9:
+            my_label.config(image=hangman_img9)
+
+            # this was for testing
+            # print("end")
+
+            # the word is revealed and a yesno messagebox appears
+            restart = messagebox.askyesno("Game Over",
+                                          "\nYou lost...\n\nThe word was {}, \n\nDo you want to play again?\n".format(word))
+
+            # if the answer is yes (which is the output 1) the restart sequence initiates, which resets the word,
+            # the picture counter and the picture with the function mentioned ealier
+            if restart:
+                word = random.choice(secret_word)
+                word_with_spaces = " ".join(word)
+                frameWord.set(" ".join("_" * len(word)))
+                picture = 0
+                pic_reset()
+
+            else:
+                root.quit()
+
+            # if no (or 0) is selected, the game quits
+
+
+    # this is the winning function, which starts once the word that is displayed is checked (with frameWord.get()),
+    # and compared to the word with spaces. When these two are identical, the winning messagebox appears
+    if frameWord.get() == word_with_spaces:
+
+        # this shows the word fully and asks for a restart
+        restart2 = messagebox.askyesno("Congratulations!",
+                                       "\nYou have successfully guessed the word: \n\n{} \n\n\nDo you want to play again?\n".format(
+                                           word))
+
+        # this is the same as the restart sequence before
+        if restart2:
+            word = random.choice(secret_word)
+            word_with_spaces = " ".join(word)
+            frameWord.set(" ".join("_" * len(word)))
+            picture = 0
+            pic_reset()
+
+        else:
+            root.quit()
+
+# this projects the first hangman picture (which is an empty, but equally sized picture)
+my_label = Label(image=hangman_img0)
+my_label.grid(row=0, column=1, rowspan=2, columnspan=3)
+
+# for testing
+button_Next = Button(root, text="", width=7, height=4, state=DISABLED, )
+button_Next.grid(row=3, column=10)
+
+
+# Here is the QWERTZ keyboard which is displayed in the program. Each button shows a letter
+# which corresponds to the same letter as input for the user_guess() function when pressed.
+# every button (except 'Quit Game' has the same width and height. They are gridded according
+# to an actual keyboard
+
+# first row of keyboard
+button_Q = Button(root, text="Q", width=7, height=4, command=lambda: user_guess('Q')).grid(row=2, column=1)
+button_W = Button(root, text="W", width=7, height=4, command=lambda: user_guess('W')).grid(row=2, column=2)
+button_E = Button(root, text="E", width=7, height=4, command=lambda: user_guess('E')).grid(row=2, column=3)
+button_R = Button(root, text="R", width=7, height=4, command=lambda: user_guess('R')).grid(row=2, column=4)
+button_T = Button(root, text="T", width=7, height=4, command=lambda: user_guess('T')).grid(row=2, column=5)
+button_Z = Button(root, text="Z", width=7, height=4, command=lambda: user_guess('Z')).grid(row=2, column=6)
+button_U = Button(root, text="U", width=7, height=4, command=lambda: user_guess('U')).grid(row=2, column=7)
+button_I = Button(root, text="I", width=7, height=4, command=lambda: user_guess('I')).grid(row=2, column=8)
+button_O = Button(root, text="O", width=7, height=4, command=lambda: user_guess('O')).grid(row=2, column=9)
+button_P = Button(root, text="P", width=7, height=4, command=lambda: user_guess('P')).grid(row=2, column=10)
+
+# middle row of keyboard
+button_A = Button(root, text="A", width=7, height=4, command=lambda: user_guess('A')).grid(row=3, column=1)
+button_S = Button(root, text="S", width=7, height=4, command=lambda: user_guess('S')).grid(row=3, column=2)
+button_D = Button(root, text="D", width=7, height=4, command=lambda: user_guess('D')).grid(row=3, column=3)
+button_F = Button(root, text="F", width=7, height=4, command=lambda: user_guess('F')).grid(row=3, column=4)
+button_G = Button(root, text="G", width=7, height=4, command=lambda: user_guess('G')).grid(row=3, column=5)
+button_H = Button(root, text="H", width=7, height=4, command=lambda: user_guess('H')).grid(row=3, column=6)
+button_J = Button(root, text="J", width=7, height=4, command=lambda: user_guess('J')).grid(row=3, column=7)
+button_K = Button(root, text="K", width=7, height=4, command=lambda: user_guess('K')).grid(row=3, column=8)
+button_L = Button(root, text="L", width=7, height=4, command=lambda: user_guess('L')).grid(row=3, column=9)
+
+# last row of keyboard
+button_Y = Button(root, text="Y", width=7, height=4, command=lambda: user_guess('Y')).grid(row=4, column=2)
+button_X = Button(root, text="X", width=7, height=4, command=lambda: user_guess('X')).grid(row=4, column=3)
+button_C = Button(root, text="C", width=7, height=4, command=lambda: user_guess('C')).grid(row=4, column=4)
+button_V = Button(root, text="V", width=7, height=4, command=lambda: user_guess('V')).grid(row=4, column=5)
+button_B = Button(root, text="B", width=7, height=4, command=lambda: user_guess('B')).grid(row=4, column=6)
+button_N = Button(root, text="N", width=7, height=4, command=lambda: user_guess('N')).grid(row=4, column=7)
+button_M = Button(root, text="M", width=7, height=4, command=lambda: user_guess('M')).grid(row=4, column=8)
+
+button_Blank2 = Button(root, text="", width=7, height=4, state=DISABLED).grid(row=4, column=1)
+
+# this button is just an exit button that quits the game
+button_EXIT = Button(root, text="Quit Game", width=14, height=4, command=root.quit, fg='red').grid(row=4, column=9,
+                                                                                                   columnspan=2)
+
+start_game()
+root.mainloop()
